@@ -6,7 +6,40 @@ domestic:
     name: 코스닥
     symbol: KQ11
 
-dummy:
+global:
+  - key: dow
+    name: 다우 산업
+    symbol: ^DJI
+  - key: nasdaq
+    name: 나스닥 종합
+    symbol: ^IXIC
+  - key: shanghai
+    name: 상해 종합
+    symbol: 000001.SS
+  - key: nikkei225
+    name: 니케이225
+    symbol: ^N225
+
+fx:
+  - key: usdkrw
+    name: 원/달러
+    symbol: KRW=X
+  - key: usdcny
+    name: 중국 위안/달러
+    symbol: CNY=X
+
+commodities:
+  - key: gold
+    name: 금
+    symbol: GC=F
+  - key: silver
+    name: 은
+    symbol: SI=F
+  - key: wti
+    name: WTI
+    symbol: CL=F
+
+fallback:
   global:
     - name: 다우 산업
       value: 50188.14

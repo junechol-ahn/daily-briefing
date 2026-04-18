@@ -2,8 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+import sys
 
 import yaml
+
+if __package__ in (None, ""):
+    # Allow running as `python src/main.py` by adding repository root to sys.path.
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from src.collector import DataCollectionError, collect_latest_market_point
 from src.normalize import normalize_dummy, normalize_market_point
@@ -20,12 +25,12 @@ def load_config() -> dict:
     return yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
-def build_report_payload(config: dict) -> tuple[dict, list[str]]:
+def collect_section_points(items: list[dict]) -> tuple[list, list[str], str | None]:
     errors: list[str] = []
-    domestic_points = []
+    points = []
     as_of_date = None
 
-    for item in config["domestic"]:
+    for item in items:
         try:
             point = collect_latest_market_point(
                 key=item["key"],
@@ -33,21 +38,42 @@ def build_report_payload(config: dict) -> tuple[dict, list[str]]:
                 symbol=item["symbol"],
             )
             normalized, point_errors = normalize_market_point(point)
-            domestic_points.append(normalized)
+            points.append(normalized)
             errors.extend(point_errors)
             as_of_date = as_of_date or point.as_of_date
         except DataCollectionError as exc:
             errors.append(str(exc))
-            domestic_points.append(
+            points.append(
                 normalize_dummy(item["name"], value=0.0, change_pct=0.0)
             )
 
-    dummy = config["dummy"]
-    global_points = [normalize_dummy(x["name"], x["value"], x["change_pct"]) for x in dummy["global"]]
-    fx_points = [normalize_dummy(x["name"], x["value"], x["change_pct"]) for x in dummy["fx"]]
-    commodity_points = [normalize_dummy(x["name"], x["value"], x["change_pct"]) for x in dummy["commodities"]]
+    return points, errors, as_of_date
 
-    if as_of_date is None:
+
+def apply_section_fallback(
+    points: list,
+    fallback: list[dict],
+) -> list:
+    if any(not p.is_dummy for p in points):
+        return points
+    return [normalize_dummy(x["name"], x["value"], x["change_pct"]) for x in fallback]
+
+
+def build_report_payload(config: dict) -> tuple[dict, list[str]]:
+    domestic_points, domestic_errors, domestic_date = collect_section_points(config["domestic"])
+    global_points, global_errors, global_date = collect_section_points(config["global"])
+    fx_points, fx_errors, fx_date = collect_section_points(config["fx"])
+    commodity_points, commodity_errors, commodity_date = collect_section_points(config["commodities"])
+
+    errors = domestic_errors + global_errors + fx_errors + commodity_errors
+
+    fallback = config.get("fallback", {})
+    global_points = apply_section_fallback(global_points, fallback.get("global", []))
+    fx_points = apply_section_fallback(fx_points, fallback.get("fx", []))
+    commodity_points = apply_section_fallback(commodity_points, fallback.get("commodities", []))
+
+    as_of_date = domestic_date or global_date or fx_date or commodity_date
+    if not as_of_date:
         as_of_date = datetime.now().strftime("%Y-%m-%d")
 
     payload = {
