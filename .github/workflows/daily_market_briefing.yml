@@ -25,6 +25,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install finance-datareader jinja2 pyyaml
 
+
       - name: Generate daily briefing
         run: |
           python src/main.py
