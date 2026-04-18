@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="../static/market_summary.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <h1>{{ title }}</h1>
+      <p class="meta">기준일: {{ as_of_date }} / 생성시각: {{ generated_at }}</p>
+
+      {% if errors %}
+      <section class="errors">
+        <h2>수집 경고</h2>
+        <ul>
+          {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      <section>
+        <h2>국내</h2>
+        <table>
+          <tr>
+            {% for row in sections.domestic %}<th>{{ row.name }}</th>{% endfor %}
+          </tr>
+          <tr>
+            {% for row in sections.domestic %}
+            <td class="{{ row.direction }}">{{ '%.2f'|format(row.value or 0) }} {{ '▲' if row.direction == 'up' else ('▼' if row.direction == 'down' else '-') }} {{ '%.2f'|format((row.change_pct or 0)|abs) }}%</td>
+            {% endfor %}
+          </tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>해외</h2>
+        <table>
+          {% for i in range(0, sections.global|length, 2) %}
+          <tr>
+            <th>{{ sections.global[i].name }}</th>
+            <th>{{ sections.global[i+1].name }}</th>
+          </tr>
+          <tr>
+            {% for row in [sections.global[i], sections.global[i+1]] %}
+            <td class="{{ row.direction }}">{{ '%.2f'|format(row.value) }} {{ '▲' if row.direction == 'up' else ('▼' if row.direction == 'down' else '-') }} {{ '%.2f'|format((row.change_pct)|abs) }}%</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </table>
+      </section>
+
+      <section>
+        <h2>환율</h2>
+        <table>
+          <tr>
+            {% for row in sections.fx %}<th>{{ row.name }}</th>{% endfor %}
+          </tr>
+          <tr>
+            {% for row in sections.fx %}
+            <td class="{{ row.direction }}">{{ '%.3f'|format(row.value) }} {{ '▲' if row.direction == 'up' else ('▼' if row.direction == 'down' else '-') }} {{ '%.2f'|format((row.change_pct)|abs) }}%</td>
+            {% endfor %}
+          </tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>상품</h2>
+        <table>
+          {% for row in sections.commodities %}
+          <tr>
+            <th>{{ row.name }}</th>
+            <td class="{{ row.direction }}">{{ '%.2f'|format(row.value) }} {{ '▲' if row.direction == 'up' else ('▼' if row.direction == 'down' else '-') }} {{ '%.2f'|format((row.change_pct)|abs) }}%</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </section>
+    </main>
+  </body>
+</html>
