@@ -1,0 +1,3 @@
+finance-datareader
+jinja2
+PyYAML
