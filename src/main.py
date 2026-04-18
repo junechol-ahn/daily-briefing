@@ -2,8 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+import sys
 
 import yaml
+
+if __package__ in (None, ""):
+    # Allow running as `python src/main.py` by adding repository root to sys.path.
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from src.collector import DataCollectionError, collect_latest_market_point
 from src.normalize import normalize_dummy, normalize_market_point

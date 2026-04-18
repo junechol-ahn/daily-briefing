@@ -1,6 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+import sys
+
+if __package__ in (None, ""):
+    # Allow importing when executed from `src/` as a script path.
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from src.collector import MarketPoint
 
