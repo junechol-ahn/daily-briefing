@@ -127,15 +127,26 @@ project/
 
 ---
 
-## 6) 스케줄링 방법 제안
+## 6) 스케줄링 방법 제안 (GitHub Actions 기본)
 
-### 옵션 1. 운영체제 스케줄러(간단, 권장)
-- Windows: 작업 스케줄러에서 `python src/main.py`를 매일 10:00 실행
-- Linux: `0 10 * * * /usr/bin/python3 /path/src/main.py`
+### 기본안. GitHub Actions 스케줄 실행(권장)
+- 실행 방식: GitHub Actions `schedule` + `workflow_dispatch`
+- 시간대 주의: GitHub Actions cron은 **UTC 기준**
+  - 한국시간 오전 10시는 UTC 01:00 → `0 1 * * *`
+- 워크플로우 파일: `.github/workflows/daily_market_briefing.yml`
+- 실행 단계 예시:
+  1) Python 설치
+  2) `FinanceDataReader`, `Jinja2` 등 의존성 설치
+  3) `python src/main.py` 실행
+  4) `output/`, `data/raw/` 변경분 커밋/푸시(선택)
 
-### 옵션 2. Python 내부 스케줄러
-- `APScheduler` 등 사용 가능하나, 프로세스 상시 실행/장애 복구 고려 필요.
-- 개인/소규모 운영은 OS 스케줄러가 단순하고 안정적.
+### 대안 1. 운영체제 스케줄러
+- 자체 서버/PC 환경에서만 운영할 경우 선택 가능
+- Windows 작업 스케줄러 또는 Linux cron 사용
+
+### 대안 2. Python 내부 스케줄러
+- `APScheduler` 등 사용 가능하나, 프로세스 상시 실행/복구 로직이 필요
+- CI 기반 운영 목적이라면 GitHub Actions가 관리 측면에서 단순
 
 ---
 

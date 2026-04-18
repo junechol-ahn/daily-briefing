@@ -1,0 +1,39 @@
+domestic:
+  - key: kospi
+    name: 코스피
+    symbol: KS11
+  - key: kosdaq
+    name: 코스닥
+    symbol: KQ11
+
+dummy:
+  global:
+    - name: 다우 산업
+      value: 50188.14
+      change_pct: 0.10
+    - name: 나스닥 종합
+      value: 23102.47
+      change_pct: -0.59
+    - name: 상해 종합
+      value: 4128.37
+      change_pct: 0.13
+    - name: 니케이225
+      value: 57650.54
+      change_pct: 2.28
+  fx:
+    - name: 원/달러
+      value: 1455.80
+      change_pct: -0.10
+    - name: 중국 위안/달러
+      value: 6.910
+      change_pct: -0.18
+  commodities:
+    - name: 금
+      value: 5062.10
+      change_pct: 0.62
+    - name: 은
+      value: 80.95
+      change_pct: 0.71
+    - name: WTI
+      value: 64.29
+      change_pct: 0.52
