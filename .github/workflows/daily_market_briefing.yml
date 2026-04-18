@@ -23,7 +23,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install FinanceDataReader jinja2 pyyaml
+          pip install finance-datareader jinja2 pyyaml
+
 
       - name: Generate daily briefing
         run: |
