@@ -1,0 +1,93 @@
+from __future__ import annotations
+
+import sys
+from datetime import datetime
+from pathlib import Path
+
+# `python src/main.py` 실행 시 프로젝트 루트를 import path에 추가
+if __package__ is None or __package__ == "":
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import yaml
+
+from src.collector import DataCollectionError, collect_latest_market_point
+from src.normalize import normalize_dummy, normalize_market_point
+from src.render import render_market_summary, save_html, save_json, timestamp_kst
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+CONFIG_PATH = BASE_DIR / "config" / "symbols.yml"
+TEMPLATE_DIR = BASE_DIR / "templates"
+OUTPUT_DIR = BASE_DIR / "output"
+RAW_DIR = BASE_DIR / "data" / "raw"
+
+
+def load_config() -> dict:
+    return yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+
+
+def build_report_payload(config: dict) -> tuple[dict, list[str]]:
+    errors: list[str] = []
+    domestic_points = []
+    as_of_date = None
+
+    for item in config["domestic"]:
+        try:
+            point = collect_latest_market_point(
+                key=item["key"],
+                name=item["name"],
+                symbol=item["symbol"],
+            )
+            normalized, point_errors = normalize_market_point(point)
+            domestic_points.append(normalized)
+            errors.extend(point_errors)
+            as_of_date = as_of_date or point.as_of_date
+        except DataCollectionError as exc:
+            errors.append(str(exc))
+            domestic_points.append(
+                normalize_dummy(item["name"], value=0.0, change_pct=0.0)
+            )
+
+    dummy = config["dummy"]
+    global_points = [normalize_dummy(x["name"], x["value"], x["change_pct"]) for x in dummy["global"]]
+    fx_points = [normalize_dummy(x["name"], x["value"], x["change_pct"]) for x in dummy["fx"]]
+    commodity_points = [normalize_dummy(x["name"], x["value"], x["change_pct"]) for x in dummy["commodities"]]
+
+    if as_of_date is None:
+        as_of_date = datetime.now().strftime("%Y-%m-%d")
+
+    payload = {
+        "as_of_date": as_of_date,
+        "generated_at": timestamp_kst(),
+        "sections": {
+            "domestic": [p.__dict__ for p in domestic_points],
+            "global": [p.__dict__ for p in global_points],
+            "fx": [p.__dict__ for p in fx_points],
+            "commodities": [p.__dict__ for p in commodity_points],
+        },
+        "errors": errors,
+    }
+    return payload, errors
+
+
+def main() -> None:
+    config = load_config()
+    payload, _ = build_report_payload(config)
+
+    html = render_market_summary(
+        TEMPLATE_DIR,
+        {
+            "title": "전일 시장 요약",
+            "as_of_date": payload["as_of_date"],
+            "generated_at": payload["generated_at"],
+            "sections": payload["sections"],
+            "errors": payload["errors"],
+        },
+    )
+
+    day = payload["as_of_date"]
+    save_html(OUTPUT_DIR / f"{day}_market_summary.html", html)
+    save_json(RAW_DIR / f"{day}_market_summary.json", payload)
+
+
+if __name__ == "__main__":
+    main()
